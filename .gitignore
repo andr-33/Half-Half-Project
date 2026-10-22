@@ -13,6 +13,13 @@ dist-ssr
 *.local
 .env
 
+# Archivos temporales
+supabase/.temp
+
+# Documentation not tracked in git
+DECISIONS.md
+DECISION.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
