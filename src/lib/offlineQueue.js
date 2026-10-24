@@ -92,15 +92,15 @@ export async function processOfflineQueue() {
         }
 
         case 'ADD_TO_LIST': {
-          // action: { articleId, quantity }
-          await addToList(action.articleId, action.quantity);
+          // action: { articleId, quantity, force }
+          await addToList(action.articleId, action.quantity, action.force ?? true);
           break;
         }
 
         case 'CREATE_AND_ADD': {
-          // action: { name, categoryId, quantity }
+          // action: { name, categoryId, quantity, force }
           const newArt = await createArticle(action.name, action.categoryId);
-          await addToList(newArt.id, action.quantity);
+          await addToList(newArt.id, action.quantity, action.force ?? true);
           break;
         }
 

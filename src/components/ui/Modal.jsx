@@ -28,17 +28,17 @@ export default function Modal({ isOpen, onClose, title, children }) {
       aria-labelledby="modal-title"
     >
       <div 
-        className="w-full max-w-sm bg-white dark:bg-neutral-800 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden transform transition-all duration-200"
+        className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden transform transition-all duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-700/60">
-          <h2 id="modal-title" className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+          <h2 id="modal-title" className="text-base font-semibold text-neutral-900">
             {title}
           </h2>
           <button
             onClick={onClose}
             aria-label="Cerrar ventana"
-            className="w-11 h-11 min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors"
+            className="w-11 h-11 min-h-[44px] min-w-[44px] -mr-2 flex items-center justify-center text-neutral-400 hover:text-neutral-600 rounded-lg hover:bg-neutral-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

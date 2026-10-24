@@ -6,6 +6,7 @@ import {
   validateAlias,
   validateColor,
 } from './membersService';
+import { getCachedMembers } from '../../lib/storage';
 import { MEMBER_COLORS, MEMBER_COLOR_KEYS, getMemberColor } from '../../lib/memberColors';
 import { AlertCircle, Check, LogOut, Loader2 } from 'lucide-react';
 
@@ -13,8 +14,11 @@ export default function CreateProfileModal({ isOpen, onProfileCreated }) {
   const { signOut } = useAuth();
   const [alias, setAlias] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
-  const [usedColors, setUsedColors] = useState([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [usedColors, setUsedColors] = useState(() => {
+    const cached = getCachedMembers();
+    return cached ? cached.map((m) => m.color) : [];
+  });
+  const [loadingMembers, setLoadingMembers] = useState(() => !getCachedMembers());
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -159,11 +163,11 @@ export default function CreateProfileModal({ isOpen, onProfileCreated }) {
                       type="button"
                       disabled={isTaken}
                       onClick={() => setSelectedColor(key)}
-                      title={isTaken ? `${color.label} (ya usado)` : color.label}
-                      aria-label={`Color ${color.label}${isTaken ? ' (ocupado)' : ''}`}
-                      className={`relative h-11 w-full min-h-[44px] rounded-xl flex items-center justify-center transition-all ${
+                      title={isTaken ? `${color.label} (no disponible)` : color.label}
+                      aria-label={`Color ${color.label}${isTaken ? ' (no disponible)' : ''}`}
+                      className={`relative h-11 w-full min-h-[44px] rounded-xl flex items-center justify-center transition-all overflow-hidden ${
                         isTaken
-                          ? 'opacity-20 cursor-not-allowed bg-neutral-200'
+                          ? 'cursor-not-allowed'
                           : isSelected
                           ? 'ring-2 ring-offset-2 ring-[#1B1918] scale-105'
                           : 'hover:scale-102 active:scale-95'
@@ -173,8 +177,13 @@ export default function CreateProfileModal({ isOpen, onProfileCreated }) {
                         border: `1.5px solid ${color.border}`,
                       }}
                     >
-                      {isSelected && (
+                      {isSelected && !isTaken && (
                         <Check className="w-4 h-4 text-[#1B1918] stroke-[3]" />
+                      )}
+                      {isTaken && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-[140%] h-[2px] bg-[#1B1918] -rotate-45" />
+                        </div>
                       )}
                     </button>
                   );

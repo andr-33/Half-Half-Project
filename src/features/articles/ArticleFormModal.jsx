@@ -49,13 +49,13 @@ export default function ArticleFormModal({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {categoryName && (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Categoría: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{categoryName}</span>
+          <p className="text-xs text-neutral-500">
+            Categoría: <span className="font-semibold text-neutral-800">{categoryName}</span>
           </p>
         )}
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -64,7 +64,7 @@ export default function ArticleFormModal({
         <div>
           <label
             htmlFor="article-name"
-            className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1"
+            className="block text-xs font-semibold text-neutral-700 mb-1"
           >
             Nombre del artículo
           </label>
@@ -76,7 +76,7 @@ export default function ArticleFormModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ej. Manzanas, Papel higiénico..."
-            className="w-full h-11 px-3 text-sm rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+            className="w-full h-11 px-3 text-sm rounded-xl border border-neutral-300 bg-white text-[#1B1918] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-900 transition-colors"
           />
         </div>
 
@@ -84,14 +84,14 @@ export default function ArticleFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 h-11 min-h-[44px] text-xs font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors"
+            className="px-4 h-11 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-[#1B1918] rounded-xl hover:bg-neutral-100 transition-colors"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={saving || !name.trim()}
-            className="px-5 h-11 min-h-[44px] flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 h-11 min-h-[44px] flex items-center justify-center rounded-xl bg-[#1B1918] hover:bg-neutral-800 active:bg-black text-white font-semibold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
           >
             {saving ? (
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

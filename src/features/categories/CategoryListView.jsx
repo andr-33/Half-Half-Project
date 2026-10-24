@@ -106,12 +106,12 @@ export default function CategoryListView() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Cabecera de la sección Catálogo */}
-      <div className="sticky top-0 z-20 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-20 bg-white border-b border-neutral-100 px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-lg font-bold tracking-tight text-[#1B1918]">
             Catálogo
           </h1>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-neutral-500">
             {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function CategoryListView() {
             setEditingCategory(null);
             setIsFormOpen(true);
           }}
-          className="min-h-[44px] px-3.5 flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition-colors"
+          className="min-h-[44px] px-3.5 flex items-center gap-1.5 rounded-xl bg-[#1B1918] hover:bg-neutral-800 text-white text-xs font-semibold transition-colors shadow-xs"
         >
           <Plus className="w-4 h-4" />
           <span>Nueva categoría</span>
@@ -130,7 +130,7 @@ export default function CategoryListView() {
 
       <div className="p-4 flex-1">
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -143,13 +143,13 @@ export default function CategoryListView() {
           </div>
         ) : categories.length === 0 ? (
           <div className="py-20 px-4 text-center flex flex-col items-center justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-400 flex items-center justify-center mb-3">
+            <div className="w-14 h-14 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center mb-3">
               <FolderOpen className="w-7 h-7" />
             </div>
-            <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+            <p className="text-base font-semibold text-[#1B1918]">
               Crea tu primera categoría
             </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-xs">
+            <p className="text-xs text-neutral-500 mt-1 max-w-xs">
               Organiza los artículos que sueles comprar por pasillos o tipos de producto (Frutería, Limpieza, etc.).
             </p>
             <button
@@ -157,7 +157,7 @@ export default function CategoryListView() {
                 setEditingCategory(null);
                 setIsFormOpen(true);
               }}
-              className="mt-5 min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-medium flex items-center gap-2 transition-colors"
+              className="mt-5 min-h-[44px] px-5 py-2.5 rounded-xl bg-[#1B1918] hover:bg-neutral-800 active:bg-black text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Crear categoría</span>
@@ -168,7 +168,7 @@ export default function CategoryListView() {
             {categories.map((cat) => (
               <li
                 key={cat.id}
-                className="group flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/60 shadow-xs hover:border-emerald-500/40 transition-colors"
+                className="group flex items-center justify-between p-3.5 rounded-2xl bg-white border border-neutral-200/80 shadow-xs hover:border-neutral-300 transition-colors"
               >
                 {/* Zona clicable principal que abre el detalle de la categoría */}
                 <button
@@ -176,14 +176,14 @@ export default function CategoryListView() {
                   onClick={() => setSelectedCategory(cat)}
                   className="flex-1 flex items-center justify-between text-left pr-2 min-h-[44px]"
                 >
-                  <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                  <span className="text-sm font-semibold text-[#1B1918]">
                     {cat.name}
                   </span>
-                  <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-emerald-500 transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-neutral-700 transition-colors" />
                 </button>
 
                 {/* Acciones de gestión de categoría */}
-                <div className="flex items-center gap-1 border-l border-neutral-100 dark:border-neutral-700/60 pl-2">
+                <div className="flex items-center gap-1 border-l border-neutral-100 pl-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -191,7 +191,7 @@ export default function CategoryListView() {
                       setIsFormOpen(true);
                     }}
                     aria-label={`Renombrar categoría ${cat.name}`}
-                    className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700/40 transition-colors"
+                    className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-400 hover:text-neutral-700 rounded-lg hover:bg-neutral-100 transition-colors"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -200,7 +200,7 @@ export default function CategoryListView() {
                     type="button"
                     onClick={() => setDeleteConfirmCategory(cat)}
                     aria-label={`Eliminar categoría ${cat.name}`}
-                    className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                    className="w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

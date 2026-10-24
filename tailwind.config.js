@@ -4,10 +4,12 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'media',
   theme: {
     extend: {
       colors: {
+        neutral: {
+          950: '#141414',
+        },
         accent: {
           50: '#ecfdf5',
           100: '#d1fae5',

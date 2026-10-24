@@ -9,6 +9,7 @@ export async function getListItems() {
       article_id,
       quantity,
       purchased,
+      added_by,
       updated_at,
       articles (
         id,
@@ -20,6 +21,11 @@ export async function getListItems() {
           name,
           name_normalized
         )
+      ),
+      members:added_by (
+        id,
+        alias,
+        color
       )
     `)
     .order('updated_at', { ascending: false });
@@ -28,7 +34,35 @@ export async function getListItems() {
   return data || [];
 }
 
-export async function addToList(articleId, quantity = 1) {
+export async function getListMeta() {
+  const { data, error } = await supabase
+    .from('list_meta')
+    .select(`
+      id,
+      updated_by,
+      updated_at,
+      members:updated_by (
+        id,
+        alias,
+        color
+      )
+    `)
+    .eq('id', true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Añade un artículo a la lista continua mediante la RPC atómica v1.1.
+ *
+ * @param {string} articleId
+ * @param {number} quantity
+ * @param {boolean} force
+ * @returns {Promise<'added' | 'exists_pending' | 'exists_purchased'>}
+ */
+export async function addToList(articleId, quantity = 1, force = false) {
   const qty = parseInt(quantity, 10);
   if (isNaN(qty) || qty < 1) {
     throw new Error('La cantidad debe ser mayor o igual a 1');
@@ -37,10 +71,11 @@ export async function addToList(articleId, quantity = 1) {
   const { data, error } = await supabase.rpc('add_to_list', {
     p_article_id: articleId,
     p_quantity: qty,
+    p_force: force,
   });
 
   if (error) throw error;
-  return data;
+  return data; // 'added' | 'exists_pending' | 'exists_purchased'
 }
 
 export async function updateItemQuantity(itemId, newQuantity) {
@@ -92,7 +127,7 @@ export async function closePurchase() {
   return data ?? 0;
 }
 
-export async function createAndAddToList(name, categoryId, quantity = 1) {
+export async function createAndAddToList(name, categoryId, quantity = 1, force = false) {
   // Comprobar si existe globalmente
   const check = await checkArticleExistsGlobal(name);
   let articleId;
@@ -106,5 +141,5 @@ export async function createAndAddToList(name, categoryId, quantity = 1) {
     articleId = newArticle.id;
   }
 
-  return addToList(articleId, quantity);
+  return addToList(articleId, quantity, force);
 }

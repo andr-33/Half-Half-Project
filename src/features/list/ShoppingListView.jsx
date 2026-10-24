@@ -11,18 +11,25 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 import {
   getListItems,
+  getListMeta,
   updateItemQuantity,
   toggleItemPurchased,
   removeItemFromList,
   closePurchase,
 } from './listService';
-import { saveCachedList, getCachedList } from '../../lib/storage';
+import {
+  saveCachedList,
+  getCachedList,
+  saveCachedListMeta,
+  getCachedListMeta,
+} from '../../lib/storage';
 import {
   getOfflineQueue,
   enqueueOfflineAction,
   processOfflineQueue,
 } from '../../lib/offlineQueue';
 import { isNetworkError } from '../../lib/networkUtils';
+import { formatRelativeTime } from '../../lib/formatRelativeTime';
 import ListItemRow from './ListItemRow';
 import AddToListModal from './AddToListModal';
 import ClosePurchaseModal from './ClosePurchaseModal';
@@ -30,6 +37,7 @@ import ClosePurchaseModal from './ClosePurchaseModal';
 export default function ShoppingListView({ onGoToCategories }) {
   // Inicialización inmediata con caché local si existe
   const [items, setItems] = useState(() => getCachedList() || []);
+  const [listMeta, setListMeta] = useState(() => getCachedListMeta());
   const [loading, setLoading] = useState(() => !getCachedList());
   const [notice, setNotice] = useState(null); // { type: 'info'|'success'|'error', text: '' }
   const [pendingQueueLength, setPendingQueueLength] = useState(() => getOfflineQueue().length);
@@ -39,6 +47,15 @@ export default function ShoppingListView({ onGoToCategories }) {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isClosePurchaseOpen, setIsClosePurchaseOpen] = useState(false);
   const [closingPurchase, setClosingPurchase] = useState(false);
+
+  // Tick para actualizar el tiempo relativo dinámicamente cada 30 segundos
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const itemsRef = useRef(items);
   useEffect(() => {
@@ -70,6 +87,19 @@ export default function ShoppingListView({ onGoToCategories }) {
     }
   }, []);
 
+  // Carga remota de metadatos de lista (F14)
+  const fetchMeta = useCallback(async () => {
+    try {
+      const meta = await getListMeta();
+      if (meta) {
+        setListMeta(meta);
+        saveCachedListMeta(meta);
+      }
+    } catch (err) {
+      console.error('Error al obtener metadatos de lista:', err);
+    }
+  }, []);
+
   // Función para procesar la cola de cambios locales pendientes
   const handleSyncQueue = useCallback(async () => {
     if (!navigator.onLine) return;
@@ -83,17 +113,19 @@ export default function ShoppingListView({ onGoToCategories }) {
       if (result.success && result.processedCount > 0) {
         showNotice(`Sincronizados ${result.processedCount} cambios locales con el servidor`, 'success');
         await fetchItems(true);
+        await fetchMeta();
       }
     } catch (err) {
       console.error('Error al sincronizar cola offline:', err);
     } finally {
       setIsSyncing(false);
     }
-  }, [fetchItems]);
+  }, [fetchItems, fetchMeta]);
 
   // Carga inicial, eventos de red y Realtime
   useEffect(() => {
     fetchItems();
+    fetchMeta();
 
     // Sincronizar cola pendiente si hay red al entrar
     if (navigator.onLine) {
@@ -104,6 +136,7 @@ export default function ShoppingListView({ onGoToCategories }) {
       showNotice('Conexión recuperada. Sincronizando cambios...', 'info', 2500);
       handleSyncQueue();
       fetchItems(true);
+      fetchMeta();
     };
 
     const onOffline = () => {
@@ -113,11 +146,11 @@ export default function ShoppingListView({ onGoToCategories }) {
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
 
-    // Suscripción Realtime a list_items
+    // Suscripción Realtime a list_items, list_meta y members
     let channel = null;
     if (supabase) {
       channel = supabase
-        .channel('public:list_items_realtime')
+        .channel('public:shopping_list_realtime')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'list_items' },
@@ -125,7 +158,23 @@ export default function ShoppingListView({ onGoToCategories }) {
             // Si hay cola pendiente en este dispositivo, la prioridad es enviar primero los cambios locales
             if (getOfflineQueue().length === 0) {
               fetchItems(true);
+              fetchMeta();
             }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'list_meta' },
+          () => {
+            fetchMeta();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'members' },
+          () => {
+            fetchItems(true);
+            fetchMeta();
           }
         )
         .subscribe();
@@ -138,7 +187,7 @@ export default function ShoppingListView({ onGoToCategories }) {
         supabase.removeChannel(channel);
       }
     };
-  }, [fetchItems, handleSyncQueue]);
+  }, [fetchItems, fetchMeta, handleSyncQueue]);
 
   // Agrupación por categoría
   const categoryGroups = useMemo(() => {
@@ -179,8 +228,25 @@ export default function ShoppingListView({ onGoToCategories }) {
     [items]
   );
 
+  // Línea discreta y única bajo el título de la lista (F14)
+  const metaSubtitle = useMemo(() => {
+    if (!listMeta?.updated_at) {
+      return `${pendingCount} ${pendingCount === 1 ? 'pendiente' : 'pendientes'}${
+        purchasedCount > 0 ? ` · ${purchasedCount} en el carrito` : ''
+      }`;
+    }
+    const timeAgo = formatRelativeTime(listMeta.updated_at);
+    if (listMeta.members?.alias) {
+      return `Editado por ${listMeta.members.alias} · ${timeAgo}`;
+    }
+    return `Editado · ${timeAgo}`;
+  }, [listMeta, pendingCount, purchasedCount]);
+
   // F5: Editar cantidad (soporta modo local en el supermercado)
   const handleUpdateQuantity = async (item, newQty) => {
+    // Si está tachado/comprado, la edición de cantidad está bloqueada
+    if (item.purchased) return;
+
     let nextItems;
     if (newQty <= 0) {
       nextItems = items.filter((i) => i.id !== item.id);
@@ -262,6 +328,9 @@ export default function ShoppingListView({ onGoToCategories }) {
 
   // F7: Quitar elemento de la lista (soporta modo local)
   const handleRemoveItem = async (item) => {
+    // Si está tachado/comprado, no se puede eliminar directamente
+    if (item.purchased) return;
+
     const nextItems = items.filter((i) => i.id !== item.id);
     setItems(nextItems);
     saveCachedList(nextItems);
@@ -367,7 +436,7 @@ export default function ShoppingListView({ onGoToCategories }) {
               ? 'bg-red-600 text-white'
               : notice.type === 'success'
               ? 'bg-emerald-600 text-white'
-              : 'bg-neutral-800 text-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+              : 'bg-[#1B1918] text-white'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -385,16 +454,16 @@ export default function ShoppingListView({ onGoToCategories }) {
       )}
 
       {/* Cabecera de la lista */}
-      <div className="sticky top-0 z-20 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-20 bg-white border-b border-neutral-100 px-4 py-3 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+            <h1 className="text-lg font-bold tracking-tight text-[#1B1918]">
               Lista de la compra
             </h1>
             {pendingQueueLength > 0 && (
               <span
                 title={`${pendingQueueLength} cambios locales pendientes de sincronizar`}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-semibold"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold"
               >
                 {isSyncing ? (
                   <RefreshCw className="w-2.5 h-2.5 animate-spin" />
@@ -405,9 +474,8 @@ export default function ShoppingListView({ onGoToCategories }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {pendingCount} {pendingCount === 1 ? 'pendiente' : 'pendientes'}
-            {purchasedCount > 0 && ` · ${purchasedCount} en el carrito`}
+          <p className="text-xs text-neutral-500 mt-0.5 truncate">
+            {metaSubtitle}
           </p>
         </div>
 
@@ -421,9 +489,9 @@ export default function ShoppingListView({ onGoToCategories }) {
               ? 'No hay artículos marcados como comprados para cerrar'
               : 'Archivar y cerrar artículos comprados'
           }
-          className="min-h-[44px] px-3.5 flex items-center gap-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="min-h-[44px] px-3.5 flex items-center gap-1.5 rounded-xl border border-neutral-300 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <ShoppingBag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <ShoppingBag className="w-4 h-4 text-neutral-700" />
           <span>Cerrar compra</span>
         </button>
       </div>
@@ -437,19 +505,19 @@ export default function ShoppingListView({ onGoToCategories }) {
         ) : items.length === 0 ? (
           /* Estado vacío F4: "Nada pendiente" */
           <div className="py-24 px-4 text-center flex flex-col items-center justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
+            <div className="w-14 h-14 rounded-2xl bg-neutral-100 text-neutral-800 flex items-center justify-center mb-3">
               <CheckCircle2 className="w-7 h-7" />
             </div>
-            <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+            <p className="text-base font-semibold text-neutral-900">
               Nada pendiente
             </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-xs">
+            <p className="text-xs text-neutral-500 mt-1 max-w-xs">
               Tu lista de la compra está vacía. Añade lo que falte en casa antes de ir al súper.
             </p>
             <button
               type="button"
               onClick={() => setIsAddOpen(true)}
-              className="mt-5 min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-sm"
+              className="mt-5 min-h-[44px] px-5 py-2.5 rounded-xl bg-[#1B1918] hover:bg-neutral-800 active:bg-neutral-900 text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>Añadir artículos</span>
@@ -461,7 +529,7 @@ export default function ShoppingListView({ onGoToCategories }) {
             {categoryGroups.map((group) => (
               <section key={group.id} className="space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
                     {group.name}
                   </h2>
                   <span className="text-xs text-neutral-400 font-medium">
@@ -504,7 +572,7 @@ export default function ShoppingListView({ onGoToCategories }) {
           type="button"
           onClick={() => setIsAddOpen(true)}
           aria-label="Añadir a la lista"
-          className="w-14 h-14 min-h-[44px] min-w-[44px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-lg flex items-center justify-center transition-transform active:scale-95"
+          className="w-14 h-14 min-h-[44px] min-w-[44px] rounded-2xl bg-[#1B1918] hover:bg-neutral-800 active:bg-neutral-900 text-white shadow-lg flex items-center justify-center transition-transform active:scale-95"
         >
           <Plus className="w-6 h-6 stroke-[2.5]" />
         </button>

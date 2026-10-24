@@ -1,5 +1,7 @@
 import { supabase } from '../../lib/supabaseClient';
 import { MEMBER_COLOR_KEYS } from '../../lib/memberColors';
+import { saveCachedMembers, getCachedMembers } from '../../lib/storage';
+import { isNetworkError, OFFLINE_WRITE_ERROR } from '../../lib/networkUtils';
 
 export const ALIAS_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]{1,10}$/;
 
@@ -39,16 +41,31 @@ export async function getCurrentMember() {
 }
 
 export async function getMembers() {
-  const { data, error } = await supabase
-    .from('members')
-    .select('*')
-    .order('created_at', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .order('created_at', { ascending: true });
 
-  if (error) throw error;
-  return data || [];
+    if (error) throw error;
+    if (data) {
+      saveCachedMembers(data);
+    }
+    return data || [];
+  } catch (err) {
+    if (isNetworkError(err)) {
+      const cached = getCachedMembers();
+      if (cached) return cached;
+    }
+    throw err;
+  }
 }
 
 export async function createMemberProfile(alias, color) {
+  if (!navigator.onLine) {
+    throw new Error(OFFLINE_WRITE_ERROR);
+  }
+
   const aliasErr = validateAlias(alias);
   if (aliasErr) throw new Error(aliasErr);
 
@@ -86,6 +103,10 @@ export async function createMemberProfile(alias, color) {
 }
 
 export async function updateMemberProfile(memberId, alias, color) {
+  if (!navigator.onLine) {
+    throw new Error(OFFLINE_WRITE_ERROR);
+  }
+
   const aliasErr = validateAlias(alias);
   if (aliasErr) throw new Error(aliasErr);
 

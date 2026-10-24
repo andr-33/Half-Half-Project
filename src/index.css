@@ -3,7 +3,31 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+
+  /* Paleta de autoría v1.1 */
+  --member-orange-soft: #FFEBD9;
+  --member-orange-intense: #FF800D;
+  --member-pink-soft: #FFEAF5;
+  --member-pink-intense: #FF6BB5;
+  --member-sky-soft: #CFECF8;
+  --member-sky-intense: #22A4D9;
+  --member-green-soft: #CBFBD4;
+  --member-green-intense: #10EA3A;
+  --member-yellow-soft: #FEFFCC;
+  --member-yellow-intense: #FBFF00;
+  --member-yellow-border: #BCBF00;
+  --member-brown-soft: #F1E3D9;
+  --member-brown-intense: #A9714B;
+  --member-red-soft: #FCCBCB;
+  --member-red-intense: #F33B3B;
+  --member-purple-soft: #F6D7FD;
+  --member-purple-intense: #D646F5;
+  --member-blue-soft: #CEE0FE;
+  --member-blue-intense: #5F9AFA;
+  --member-mauve-soft: #EFECEF;
+  --member-mauve-intense: #B0A4B0;
+  --member-text: #1B1918;
 }
 
 body {
@@ -16,6 +40,8 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  background-color: #F5F5F5;
+  color: #1B1918;
 }
 
 /* Permitir selección en inputs y textareas */

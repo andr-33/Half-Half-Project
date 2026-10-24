@@ -6,6 +6,7 @@ import {
   validateAlias,
   validateColor,
 } from './membersService';
+import { getCachedMembers } from '../../lib/storage';
 import { MEMBER_COLORS, MEMBER_COLOR_KEYS, getMemberColor } from '../../lib/memberColors';
 import {
   LogOut,
@@ -13,14 +14,17 @@ import {
   AlertCircle,
   Loader2,
   Users,
+  Pencil,
+  X,
 } from 'lucide-react';
 
 export default function ProfileView() {
   const { member, reloadMember, signOut } = useAuth();
   const [alias, setAlias] = useState(member?.alias || '');
   const [selectedColor, setSelectedColor] = useState(member?.color || '');
-  const [allMembers, setAllMembers] = useState([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [allMembers, setAllMembers] = useState(() => getCachedMembers() || []);
+  const [loadingMembers, setLoadingMembers] = useState(() => !getCachedMembers());
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null); // { type: 'success' | 'error', text: '' }
 
@@ -75,6 +79,7 @@ export default function ProfileView() {
       await updateMemberProfile(member.id, alias, selectedColor);
       await reloadMember();
       await fetchAllMembers();
+      setIsEditing(false);
       setStatusMsg({ type: 'success', text: 'Perfil actualizado con éxito.' });
     } catch (err) {
       setStatusMsg({ type: 'error', text: err.message || 'Error al actualizar perfil.' });
@@ -121,98 +126,128 @@ export default function ProfileView() {
           </div>
         )}
 
-        {/* Tarjeta de edición de mi perfil */}
-        <section className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-xs space-y-5">
-          <div className="flex items-center gap-4">
-            {/* Avatar actual */}
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl shadow-sm transition-all"
-              style={{
-                backgroundColor: currentColorObj.intense,
-                color: '#1B1918',
-                border: `2px solid ${currentColorObj.border}`,
-              }}
-            >
-              {avatarLetter}
-            </div>
+        {/* Tarjeta de perfil con edición desplegable */}
+        <section className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              {/* Avatar actual */}
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl shadow-xs transition-all"
+                style={{
+                  backgroundColor: currentColorObj.intense,
+                  color: '#1B1918',
+                  border: `2px solid ${currentColorObj.border}`,
+                }}
+              >
+                {avatarLetter}
+              </div>
 
-            <div>
-              <p className="text-sm font-bold text-[#1B1918]">{member?.alias}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                Color de autoría: <span className="font-semibold">{currentColorObj.label}</span>
-              </p>
-              <p className="text-[11px] text-neutral-400 mt-0.5">
-                Al cambiarlo, recolorea automáticamente todos tus artículos en la lista.
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSave} className="space-y-4 pt-2 border-t border-neutral-100">
-            <div>
-              <label htmlFor="edit-alias" className="block text-xs font-semibold text-neutral-700 mb-1">
-                Alias
-              </label>
-              <input
-                id="edit-alias"
-                type="text"
-                required
-                maxLength={10}
-                value={alias}
-                onChange={(e) => setAlias(e.target.value.replace(/\s+/g, ''))}
-                className="w-full h-11 px-3 text-sm rounded-xl border border-neutral-300 bg-white text-[#1B1918] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-900 transition-colors"
-              />
-              <p className="text-[11px] text-neutral-400 mt-1">1 a 10 letras o números, sin espacios.</p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-2">
-                Color asignado
-              </label>
-              <div className="grid grid-cols-5 gap-2.5">
-                {MEMBER_COLOR_KEYS.map((key) => {
-                  const color = MEMBER_COLORS[key];
-                  const isTaken = colorsTakenByOthers.includes(key);
-                  const isSelected = selectedColor === key;
-
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      disabled={isTaken}
-                      onClick={() => setSelectedColor(key)}
-                      title={isTaken ? `${color.label} (ocupado por otro miembro)` : color.label}
-                      aria-label={`Color ${color.label}${isTaken ? ' (ocupado)' : ''}`}
-                      className={`relative h-11 w-full min-h-[44px] rounded-xl flex items-center justify-center transition-all ${
-                        isTaken
-                          ? 'opacity-20 cursor-not-allowed bg-neutral-200'
-                          : isSelected
-                          ? 'ring-2 ring-offset-2 ring-[#1B1918] scale-105'
-                          : 'hover:scale-102 active:scale-95'
-                      }`}
-                      style={{
-                        backgroundColor: color.intense,
-                        border: `1.5px solid ${color.border}`,
-                      }}
-                    >
-                      {isSelected && <Check className="w-4 h-4 text-[#1B1918] stroke-[3]" />}
-                    </button>
-                  );
-                })}
+              <div>
+                <p className="text-base font-bold text-[#1B1918]">{member?.alias}</p>
               </div>
             </div>
 
+            {/* Botón desplegar edición */}
             <button
-              type="submit"
-              disabled={saving || !isDirty || !alias.trim()}
-              className="w-full h-11 min-h-[44px] flex items-center justify-center rounded-xl bg-[#1B1918] hover:bg-neutral-800 active:bg-black text-white font-medium text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+              type="button"
+              onClick={() => {
+                setIsEditing((prev) => !prev);
+                setStatusMsg(null);
+                if (isEditing) {
+                  setAlias(member?.alias || '');
+                  setSelectedColor(member?.color || '');
+                }
+              }}
+              className="min-h-[44px] px-3.5 flex items-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
-              {saving ? (
-                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {isEditing ? (
+                <>
+                  <X className="w-3.5 h-3.5" />
+                  <span>Cancelar</span>
+                </>
               ) : (
-                'Guardar cambios'
+                <>
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Editar perfil</span>
+                </>
               )}
             </button>
-          </form>
+          </div>
+
+          {/* Formulario desplegable */}
+          {isEditing && (
+            <form onSubmit={handleSave} className="space-y-4 pt-4 border-t border-neutral-100 animate-in fade-in duration-150">
+              <div>
+                <label htmlFor="edit-alias" className="block text-xs font-semibold text-neutral-700 mb-1">
+                  Alias
+                </label>
+                <input
+                  id="edit-alias"
+                  type="text"
+                  required
+                  maxLength={10}
+                  value={alias}
+                  onChange={(e) => setAlias(e.target.value.replace(/\s+/g, ''))}
+                  className="w-full h-11 px-3 text-sm rounded-xl border border-neutral-300 bg-white text-[#1B1918] focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-900 transition-colors"
+                />
+                <p className="text-[11px] text-neutral-400 mt-1">1 a 10 letras o números, sin espacios.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-2">
+                  Color asignado
+                </label>
+                <div className="grid grid-cols-5 gap-2.5">
+                  {MEMBER_COLOR_KEYS.map((key) => {
+                    const color = MEMBER_COLORS[key];
+                    const isTaken = colorsTakenByOthers.includes(key);
+                    const isSelected = selectedColor === key;
+
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        disabled={isTaken}
+                        onClick={() => setSelectedColor(key)}
+                        title={isTaken ? `${color.label} (no disponible)` : color.label}
+                        aria-label={`Color ${color.label}${isTaken ? ' (no disponible)' : ''}`}
+                        className={`relative h-11 w-full min-h-[44px] rounded-xl flex items-center justify-center transition-all overflow-hidden ${
+                          isTaken
+                            ? 'cursor-not-allowed'
+                            : isSelected
+                            ? 'ring-2 ring-offset-2 ring-[#1B1918] scale-105'
+                            : 'hover:scale-102 active:scale-95'
+                        }`}
+                        style={{
+                          backgroundColor: color.intense,
+                          border: `1.5px solid ${color.border}`,
+                        }}
+                      >
+                        {isSelected && !isTaken && <Check className="w-4 h-4 text-[#1B1918] stroke-[3]" />}
+                        {isTaken && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-[140%] h-[2px] bg-[#1B1918] -rotate-45" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={saving || !isDirty || !alias.trim()}
+                className="w-full h-11 min-h-[44px] flex items-center justify-center rounded-xl bg-[#1B1918] hover:bg-neutral-800 active:bg-black text-white font-medium text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+              >
+                {saving ? (
+                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  'Guardar cambios'
+                )}
+              </button>
+            </form>
+          )}
         </section>
 
         {/* Sección de solo lectura: Miembros del hogar */}

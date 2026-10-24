@@ -46,14 +46,14 @@ export default function ConfirmDeleteCategoryModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Eliminar categoría">
       <div className="space-y-4">
-        <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 mt-0.5" />
           <div className="space-y-1">
             <p className="font-semibold text-sm">
               ¿Eliminar "{category?.name}"?
             </p>
             {loading ? (
-              <p className="text-neutral-500 dark:text-neutral-400">
+              <p className="text-neutral-500">
                 Calculando artículos afectados...
               </p>
             ) : (
@@ -65,7 +65,7 @@ export default function ConfirmDeleteCategoryModal({
         </div>
 
         {error && (
-          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-xs text-red-600">{error}</p>
         )}
 
         <div className="flex items-center justify-end gap-2 pt-2">
@@ -73,7 +73,7 @@ export default function ConfirmDeleteCategoryModal({
             type="button"
             onClick={onClose}
             disabled={deleting}
-            className="px-4 h-11 min-h-[44px] text-xs font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors disabled:opacity-50"
+            className="px-4 h-11 min-h-[44px] text-xs font-semibold text-neutral-600 hover:text-[#1B1918] rounded-xl hover:bg-neutral-100 transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
