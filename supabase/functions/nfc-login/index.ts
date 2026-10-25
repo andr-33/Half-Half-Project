@@ -75,14 +75,14 @@ serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    // 3. Buscar si existe en member_keys y obtener el user_id del miembro
+    // 3. Buscar la key y obtener directamente el user_id de la cuenta
     const { data: memberKey, error: keyError } = await supabaseAdmin
       .from("member_keys")
-      .select("member_id, members ( user_id )")
+      .select("user_id")
       .eq("key_hash", keyHash)
       .maybeSingle();
 
-    if (keyError || !memberKey || !memberKey.members?.user_id) {
+    if (keyError || !memberKey?.user_id) {
       registerFailedAttempt(clientIp);
       // Respuesta 401 genérica sin detalles como exige la especificación
       return new Response(
@@ -91,7 +91,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const userId = memberKey.members.user_id;
+    const userId = memberKey.user_id;
 
     // 4. Obtener el email del usuario para generar el link/token de autenticación
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
