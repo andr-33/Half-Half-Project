@@ -23,9 +23,9 @@ export const MEMBER_COLORS = {
   sky: {
     id: 'sky',
     label: 'Cielo',
-    soft: '#CFECF8',
-    intense: '#22A4D9',
-    border: '#22A4D9',
+    soft: '#E6F5FC',
+    intense: '#89CFF0',
+    border: '#89CFF0',
     text: '#1B1918',
   },
   green: {

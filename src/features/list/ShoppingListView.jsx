@@ -189,7 +189,7 @@ export default function ShoppingListView({ onGoToCategories }) {
     };
   }, [fetchItems, fetchMeta, handleSyncQueue]);
 
-  // Agrupación por categoría
+  // Agrupación por categoría conservando el orden de cada artículo
   const categoryGroups = useMemo(() => {
     const groupMap = new Map();
 
@@ -202,16 +202,11 @@ export default function ShoppingListView({ onGoToCategories }) {
         groupMap.set(catId, {
           id: catId,
           name: catName,
-          pending: [],
-          purchased: [],
+          items: [],
         });
       }
 
-      if (item.purchased) {
-        groupMap.get(catId).purchased.push(item);
-      } else {
-        groupMap.get(catId).pending.push(item);
-      }
+      groupMap.get(catId).items.push(item);
     }
 
     return Array.from(groupMap.values()).sort((a, b) =>
@@ -231,9 +226,8 @@ export default function ShoppingListView({ onGoToCategories }) {
   // Línea discreta y única bajo el título de la lista (F14)
   const metaSubtitle = useMemo(() => {
     if (!listMeta?.updated_at) {
-      return `${pendingCount} ${pendingCount === 1 ? 'pendiente' : 'pendientes'}${
-        purchasedCount > 0 ? ` · ${purchasedCount} en el carrito` : ''
-      }`;
+      return `${pendingCount} ${pendingCount === 1 ? 'pendiente' : 'pendientes'}${purchasedCount > 0 ? ` · ${purchasedCount} en el carrito` : ''
+        }`;
     }
     const timeAgo = formatRelativeTime(listMeta.updated_at);
     if (listMeta.members?.alias) {
@@ -407,14 +401,14 @@ export default function ShoppingListView({ onGoToCategories }) {
           updated = prev.map((i) =>
             i.article_id === addedItem.article_id
               ? {
-                  ...i,
-                  quantity: exists.purchased ? addedItem.quantity : exists.quantity + addedItem.quantity,
-                  purchased: false,
-                }
+                ...i,
+                quantity: exists.purchased ? addedItem.quantity : exists.quantity + addedItem.quantity,
+                purchased: false,
+              }
               : i
           );
         } else {
-          updated = [addedItem, ...prev];
+          updated = [...prev, addedItem];
         }
         saveCachedList(updated);
         return updated;
@@ -431,13 +425,12 @@ export default function ShoppingListView({ onGoToCategories }) {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed top-16 left-4 right-4 z-40 max-w-md mx-auto p-3.5 rounded-2xl shadow-lg flex items-center justify-between gap-3 text-xs font-medium animate-in fade-in slide-in-from-top-2 duration-200 ${
-            notice.type === 'error'
+          className={`fixed top-16 left-4 right-4 z-40 max-w-md mx-auto p-3.5 rounded-2xl shadow-lg flex items-center justify-between gap-3 text-xs font-medium animate-in fade-in slide-in-from-top-2 duration-200 ${notice.type === 'error'
               ? 'bg-red-600 text-white'
               : notice.type === 'success'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-[#1B1918] text-white'
-          }`}
+                ? 'bg-emerald-600 text-white'
+                : 'bg-[#1B1918] text-white'
+            }`}
         >
           <div className="flex items-center gap-2">
             {notice.type === 'error' && <AlertCircle className="w-4 h-4 flex-shrink-0" />}
@@ -532,25 +525,10 @@ export default function ShoppingListView({ onGoToCategories }) {
                   <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
                     {group.name}
                   </h2>
-                  <span className="text-xs text-neutral-400 font-medium">
-                    {group.pending.length + group.purchased.length}
-                  </span>
                 </div>
 
                 <div className="space-y-2">
-                  {/* Pendientes */}
-                  {group.pending.map((item) => (
-                    <ListItemRow
-                      key={item.id}
-                      item={item}
-                      onTogglePurchased={handleTogglePurchased}
-                      onUpdateQuantity={handleUpdateQuantity}
-                      onRemove={handleRemoveItem}
-                    />
-                  ))}
-
-                  {/* Comprados tachados */}
-                  {group.purchased.map((item) => (
+                  {group.items.map((item) => (
                     <ListItemRow
                       key={item.id}
                       item={item}

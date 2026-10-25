@@ -10,6 +10,7 @@ export async function getListItems() {
       quantity,
       purchased,
       added_by,
+      created_at,
       updated_at,
       articles (
         id,
@@ -28,7 +29,7 @@ export async function getListItems() {
         color
       )
     `)
-    .order('updated_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (error) throw error;
   return data || [];

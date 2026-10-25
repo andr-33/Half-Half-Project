@@ -100,25 +100,16 @@ export default function ProfileView() {
           <h1 className="text-lg font-bold tracking-tight text-[#1B1918]">Mi Perfil</h1>
           <p className="text-xs text-neutral-500">Configuración de identidad y miembros</p>
         </div>
-
-        <button
-          onClick={signOut}
-          className="min-h-[44px] px-3 flex items-center gap-1.5 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Cerrar sesión</span>
-        </button>
       </div>
 
       <div className="p-4 space-y-6 flex-1">
         {/* Mensaje de estado */}
         {statusMsg && (
           <div
-            className={`p-3.5 rounded-2xl border text-xs flex items-center gap-2 ${
-              statusMsg.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-red-50 border-red-200 text-red-700'
-            }`}
+            className={`p-3.5 rounded-2xl border text-xs flex items-center gap-2 ${statusMsg.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border-red-200 text-red-700'
+              }`}
           >
             {statusMsg.type === 'error' && <AlertCircle className="w-4 h-4 flex-shrink-0" />}
             {statusMsg.type === 'success' && <Check className="w-4 h-4 flex-shrink-0" />}
@@ -195,7 +186,7 @@ export default function ProfileView() {
 
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-2">
-                  Color asignado
+                  Color
                 </label>
                 <div className="grid grid-cols-5 gap-2.5">
                   {MEMBER_COLOR_KEYS.map((key) => {
@@ -211,13 +202,12 @@ export default function ProfileView() {
                         onClick={() => setSelectedColor(key)}
                         title={isTaken ? `${color.label} (no disponible)` : color.label}
                         aria-label={`Color ${color.label}${isTaken ? ' (no disponible)' : ''}`}
-                        className={`relative h-11 w-full min-h-[44px] rounded-xl flex items-center justify-center transition-all overflow-hidden ${
-                          isTaken
-                            ? 'cursor-not-allowed'
-                            : isSelected
-                            ? 'ring-2 ring-offset-2 ring-[#1B1918] scale-105'
+                        className={`relative h-11 w-full min-h-[44px] rounded-xl flex items-center justify-center transition-all overflow-hidden ${isTaken
+                          ? 'cursor-not-allowed'
+                          : isSelected
+                            ? 'ring-2 ring-offset-2 ring-[#1b1818] scale-105'
                             : 'hover:scale-102 active:scale-95'
-                        }`}
+                          }`}
                         style={{
                           backgroundColor: color.intense,
                           border: `1.5px solid ${color.border}`,
