@@ -1,6 +1,12 @@
 import { supabase } from '../../lib/supabaseClient';
 import { MEMBER_COLOR_KEYS } from '../../lib/memberColors';
-import { saveCachedMembers, getCachedMembers } from '../../lib/storage';
+import {
+  saveCachedMembers,
+  getCachedMembers,
+  saveCachedCurrentMember,
+  getCachedCurrentMember,
+  clearCachedCurrentMember,
+} from '../../lib/storage';
 import { isNetworkError, OFFLINE_WRITE_ERROR } from '../../lib/networkUtils';
 
 export const ALIAS_REGEX = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]{1,10}$/;
@@ -26,18 +32,48 @@ export function validateColor(color) {
   return null;
 }
 
+function getOfflineCurrentMember(userId) {
+  const cachedCurrent = getCachedCurrentMember();
+  if (cachedCurrent && cachedCurrent.user_id === userId) {
+    return cachedCurrent;
+  }
+  const cachedMembers = getCachedMembers();
+  if (Array.isArray(cachedMembers)) {
+    return cachedMembers.find((m) => m.user_id === userId) || null;
+  }
+  return null;
+}
+
 export async function getCurrentMember() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) return null;
 
-  const { data, error } = await supabase
-    .from('members')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return getOfflineCurrentMember(user.id);
+  }
 
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data) {
+      saveCachedCurrentMember(data);
+    } else {
+      clearCachedCurrentMember();
+    }
+    return data;
+  } catch (err) {
+    if (isNetworkError(err)) {
+      return getOfflineCurrentMember(user.id);
+    }
+    throw err;
+  }
 }
 
 export async function getMembers() {
@@ -99,6 +135,7 @@ export async function createMemberProfile(alias, color) {
     throw error;
   }
 
+  saveCachedCurrentMember(data);
   return data;
 }
 
@@ -136,6 +173,7 @@ export async function updateMemberProfile(memberId, alias, color) {
     throw error;
   }
 
+  saveCachedCurrentMember(data);
   return data;
 }
 
