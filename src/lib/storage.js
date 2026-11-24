@@ -1,8 +1,39 @@
 const LIST_KEY = 'shopping_list_cache';
 const LIST_META_KEY = 'shopping_list_meta_cache';
 const MEMBERS_KEY = 'members_cache';
+const CURRENT_MEMBER_KEY = 'current_member_cache';
 const CATEGORIES_KEY = 'categories_cache';
 const ARTICLES_PREFIX = 'articles_cache_';
+
+export function saveCachedCurrentMember(member) {
+  try {
+    if (member) {
+      localStorage.setItem(CURRENT_MEMBER_KEY, JSON.stringify(member));
+    } else {
+      localStorage.removeItem(CURRENT_MEMBER_KEY);
+    }
+  } catch (err) {
+    console.error('Error guardando miembro actual en localStorage:', err);
+  }
+}
+
+export function getCachedCurrentMember() {
+  try {
+    const raw = localStorage.getItem(CURRENT_MEMBER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    console.error('Error leyendo miembro actual de localStorage:', err);
+    return null;
+  }
+}
+
+export function clearCachedCurrentMember() {
+  try {
+    localStorage.removeItem(CURRENT_MEMBER_KEY);
+  } catch (err) {
+    console.error('Error limpiando miembro actual de localStorage:', err);
+  }
+}
 
 export function saveCachedMembers(members) {
   try {

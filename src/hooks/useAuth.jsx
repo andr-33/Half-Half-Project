@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { getCurrentMember, loginWithNfcKey } from '../features/profile/membersService';
+import { saveCachedCurrentMember, clearCachedCurrentMember } from '../lib/storage';
 
 const AuthContext = createContext(null);
 
@@ -96,6 +97,7 @@ export function AuthProvider({ children }) {
         { event: '*', schema: 'public', table: 'members' },
         (payload) => {
           if (payload.new && payload.new.user_id === session.user.id) {
+            saveCachedCurrentMember(payload.new);
             setMember(payload.new);
           }
         }
@@ -106,6 +108,20 @@ export function AuthProvider({ children }) {
       supabase.removeChannel(channel);
     };
   }, [session?.user?.id]);
+
+  // 4. Recargar perfil al recuperar conexión para sincronizar cambios remotos
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const handleOnline = () => {
+      reloadMember();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [session?.user?.id, reloadMember]);
 
   const signIn = async (email, password) => {
     if (!isSupabaseConfigured || !supabase) {
@@ -122,6 +138,7 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     if (!supabase) return;
+    clearCachedCurrentMember();
     setMember(null);
     const { error } = await supabase.auth.signOut();
     if (error) throw error;

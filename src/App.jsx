@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 import LoginView from './features/auth/LoginView';
 import Layout from './components/Layout';
 
@@ -10,6 +11,7 @@ import CreateProfileModal from './features/profile/CreateProfileModal';
 
 function MainApp() {
   const { session, loading, member, loadingMember, reloadMember } = useAuth();
+  const isOnline = useOnlineStatus();
   const [activeTab, setActiveTab] = useState('list');
 
   if (loading) {
@@ -24,8 +26,8 @@ function MainApp() {
     return <LoginView />;
   }
 
-  // F11: Si el usuario autenticado aún no tiene perfil de miembro, mostrar onboarding obligatorio
-  const needsProfileSetup = !loadingMember && !member;
+  // F11: Si el usuario autenticado aún no tiene perfil de miembro, mostrar onboarding obligatorio (solo con conexión)
+  const needsProfileSetup = !loadingMember && !member && isOnline;
 
   return (
     <>
